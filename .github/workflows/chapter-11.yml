@@ -28,7 +28,7 @@ jobs:
           cat Chapter-11/build/firmware.bin Chapter-11/build/fw.sig > Chapter-11/build/fw_signed.bin
           echo "Signed firmware at Chapter-11/build/fw_signed.bin"
 
-      # Fake upload (no AWS required)
+      # Your S3 Bucket
       - name: Simulate Upload to S3
         run: |
           mkdir -p uploads
