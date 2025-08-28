@@ -1,4 +1,4 @@
-# Makefile for IoT Edge Device CI/CD Pipeline (Firmware Build and Test)
+# Makefile for IoT Edge  Device CI/CD Pipeline (Firmware Build and Test)
 
 BUILD_DIR = build
 FIRMWARE_FILE = $(BUILD_DIR)/firmware.bin
