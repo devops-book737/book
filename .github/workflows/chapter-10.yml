@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'Chapter-10/**'
+      - '.github/workflows/chapter-10.yml'
 
 jobs:
   build:

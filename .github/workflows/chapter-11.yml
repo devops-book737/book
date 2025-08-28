@@ -3,7 +3,8 @@ name: Chapter 11 — OTA Build, Sign & Upload
 on:
   push:
    paths:
-      - 'Chapter-11/**'    
+      - 'Chapter-11/**'
+      - '.github/workflows/chapter-11.yml'  
 
 jobs:
   ota:
