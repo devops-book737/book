@@ -1,18 +1,24 @@
 name: IoT Edge Device CI/CD Pipeline
+
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Build firmware
         run: make firmware
+
       - name: Run tests
         run: make test
-      - name: Deploy to Edge Device (disabled)
-        if: ${{ false }}
-        run: echo "deploy disabled for now"
+
+      - name: Deploy to Edge Device
+        run: ssh user@edge_device 'sudo reboot' # This deploys the firmware to the device
+
 
