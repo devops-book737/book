@@ -1,4 +1,4 @@
-# Makefile for Chapter 11 CI/CD (Build + Test + OTA)
+# Makefile for Chapter  11 CI/CD (Build + Test + OTA)
 
 BUILD_DIR = build
 FIRMWARE_FILE = $(BUILD_DIR)/firmware.bin
