@@ -15,7 +15,7 @@ firmware:
 	# Example build command (adjust this to match your actual build system)
 	# This assumes you have a makefile in a `firmware` folder or other build system
 	# Modify the command below based on your actual firmware build process
-	make all
+	make -C $(PWD) all
 
 	@echo "Firmware built at $(FIRMWARE_FILE)"
 
