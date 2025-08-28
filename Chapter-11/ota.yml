@@ -1,0 +1,43 @@
+name: Chapter 11 — OTA Build, Sign & Upload
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+jobs:
+  ota:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Build via Chapter-11 Makefile
+      - name: Build firmware
+        run: make -C Chapter-11 all
+
+      # Dummy sign (generate temp private key)
+      - name: Sign firmware (dummy key)
+        run: |
+          mkdir -p Chapter-11/build
+          # Generate temp key
+          openssl genrsa -out temp_priv.pem 2048
+          # Sign firmware
+          openssl dgst -sha256 -sign temp_priv.pem \
+            -out Chapter-11/build/fw.sig Chapter-11/build/firmware.bin
+          # Bundle signed firmware
+          cat Chapter-11/build/firmware.bin Chapter-11/build/fw.sig > Chapter-11/build/fw_signed.bin
+          echo "Signed firmware at Chapter-11/build/fw_signed.bin"
+
+      # Fake upload (no AWS required)
+      - name: Simulate Upload to S3
+        run: |
+          mkdir -p uploads
+          cp Chapter-11/build/fw_signed.bin uploads/
+          echo "Pretending to upload to S3 bucket... file stored in uploads/"
+      
+      # Save as GitHub Actions artifact
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Chapter-11-fw_signed
+          path: Chapter-11/build/fw_signed.bin
