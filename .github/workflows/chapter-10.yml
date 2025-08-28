@@ -2,8 +2,8 @@ name: IoT Edge Device CI/CD Pipeline
 
 on:
   push:
-    branches:
-      - main
+    paths:
+      - 'Chapter-10/**'
 
 jobs:
   build:

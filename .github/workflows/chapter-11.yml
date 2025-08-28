@@ -2,8 +2,8 @@ name: Chapter 11 — OTA Build, Sign & Upload
 
 on:
   push:
-    branches: [ main ]
-  workflow_dispatch: {}
+   paths:
+      - 'Chapter-11/**'    
 
 jobs:
   ota:
