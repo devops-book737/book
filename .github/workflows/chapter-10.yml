@@ -18,7 +18,9 @@ jobs:
       - name: Run tests
         run: make test
 
-      - name: Deploy to Edge Device
-        run: ssh user@edge_device 'sudo reboot' # This deploys the firmware to the device
+      # - name: Deploy to Edge Device
+      #   # Here you can connect to the server and reboot the firmware
+      #   run: ssh user@edge_device 'sudo reboot'
+
 
 
