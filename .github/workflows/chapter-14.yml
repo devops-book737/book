@@ -80,3 +80,12 @@ jobs:
             Chapter-14/build/*.bin
             Chapter-14/build/*.map
           if-no-files-found: warn
+
+      - name: Show tree
+        run: |
+          ls -la
+          echo "--- Chapter-14 ---"
+          ls -la Chapter-14 || true
+          echo "--- Expecting linker.ld here ---"
+          test -f Chapter-14/linker.ld && echo "found Chapter-14/linker.ld"
+
