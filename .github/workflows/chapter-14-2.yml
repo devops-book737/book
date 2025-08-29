@@ -45,29 +45,40 @@ jobs:
           ls -lh "${BUILD_DIR}" || true
           test -f "${BUILD_DIR}/${TARGET_BIN}" && sha256sum "${BUILD_DIR}/${TARGET_BIN}" || echo "Note: ${BUILD_DIR}/${TARGET_BIN} not found (ok if your Makefile uses a different name)."
 
-      - name: Run unit tests (capture logs + artifacts)
+      - name: Run unit tests (capture full reports)
         id: runtests
         run: |
-          mkdir -p "${TEST_ART_DIR}"
+          set -e
+          mkdir -p "${TEST_ART_DIR}"/{junit,coverage,logs}
+
           if [ -f "${CHAPTER_DIR}/run_tests.sh" ]; then
             chmod +x "${CHAPTER_DIR}/run_tests.sh"
             echo "[CI] Running unit tests..."
-            # capture stdout/stderr to a log for artifacts
             (cd "${CHAPTER_DIR}" && ./run_tests.sh) \
-              > "${TEST_ART_DIR}/tests.log" 2>&1 || echo "Unit tests returned non-zero exit code."
-            # If your tests generate these, they'll be uploaded too:
-            # - JUnit XML: Chapter-14/test-artifacts/junit/*.xml
-            # - Coverage:  Chapter-14/test-artifacts/coverage/**
+              > "${TEST_ART_DIR}/logs/tests.log" 2>&1 || echo "nonzero_exit" > "${TEST_ART_DIR}/logs/status.txt"
+
+            # Collect common report locations if produced by your script
+            find "${CHAPTER_DIR}" -type f \( -name "junit*.xml" -o -name "*_junit.xml" -o -name "TEST-*.xml" -o -name "report.xml" \) -print -exec cp -v {} "${TEST_ART_DIR}/junit/" \; || true
+            find "${CHAPTER_DIR}" -type f \( -name "coverage.info" -o -name "lcov.info" -o -name "cobertura*.xml" \) -print -exec cp -v {} "${TEST_ART_DIR}/coverage/" \; || true
+            if [ -d "${CHAPTER_DIR}/coverage" ]; then
+              cp -rv "${CHAPTER_DIR}/coverage" "${TEST_ART_DIR}/coverage/html" || true
+            fi
+
+            {
+              echo "timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+              echo "runner=${{ runner.os }}"
+              echo "commit=${{ github.sha }}"
+            } > "${TEST_ART_DIR}/summary.txt"
           else
             echo "[CI] No run_tests.sh found — creating placeholder log."
-            echo "No tests present in ${CHAPTER_DIR}" > "${TEST_ART_DIR}/tests.log"
+            echo "No tests present in ${CHAPTER_DIR}" > "${TEST_ART_DIR}/logs/tests.log"
           fi
 
-      - name: Upload unit-test artifacts
+      - name: Upload unit test artifacts (full reports)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: chapter-14-tests-${{ github.run_number }}
+          name: unit test
           path: |
             Chapter-14/test-artifacts/**
           if-no-files-found: warn
