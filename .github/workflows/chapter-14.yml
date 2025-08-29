@@ -27,7 +27,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y gcc-arm-none-eabi binutils-arm-none-eabi libnewlib-arm-none-eabi make openssl
 
-      - name: Show tool versions (visibility)
+      - name: Show tool versions
         run: |
           arm-none-eabi-gcc --version
           arm-none-eabi-objcopy --version
@@ -35,27 +35,22 @@ jobs:
           openssl version
           make --version
 
-      # Build via Chapter-14 Makefile (expects $(BUILD_DIR)/firmware.bin)
-      - name: Build firmware
-        run: make -C "${CHAPTER_DIR}" all
+      - name: Build firmware (auto-fallback if linker.ld missing)
+        run: make -C "${CHAPTER_DIR}" -j"$(nproc)" all
 
       - name: Check firmware output exists
         run: |
           test -f "${BUILD_DIR}/${TARGET_BIN}" || (echo "Missing ${BUILD_DIR}/${TARGET_BIN}" && exit 1)
           ls -lh "${BUILD_DIR}/${TARGET_BIN}"
 
-      # Dummy sign (temp private key) — for demo only
+      # Dummy sign (demo only)
       - name: Sign firmware (dummy key)
         run: |
           mkdir -p "${BUILD_DIR}"
-          # Generate temp key
           openssl genrsa -out temp_priv.pem 2048
-          # Sign firmware
           openssl dgst -sha256 -sign temp_priv.pem \
             -out "${BUILD_DIR}/fw.sig" "${BUILD_DIR}/${TARGET_BIN}"
-          # Bundle signed firmware
           cat "${BUILD_DIR}/${TARGET_BIN}" "${BUILD_DIR}/fw.sig" > "${BUILD_DIR}/fw_signed.bin"
-          # Show hashes
           echo "SHA256 (firmware.bin):"
           openssl dgst -sha256 "${BUILD_DIR}/${TARGET_BIN}"
           echo "SHA256 (fw_signed.bin):"
@@ -80,12 +75,3 @@ jobs:
             Chapter-14/build/*.bin
             Chapter-14/build/*.map
           if-no-files-found: warn
-
-      - name: Show tree
-        run: |
-          ls -la
-          echo "--- Chapter-14 ---"
-          ls -la Chapter-14 || true
-          echo "--- Expecting linker.ld here ---"
-          test -f Chapter-14/linker.ld && echo "found Chapter-14/linker.ld"
-
