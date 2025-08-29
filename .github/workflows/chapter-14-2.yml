@@ -16,6 +16,7 @@ jobs:
       CHAPTER_DIR: Chapter-14
       BUILD_DIR: Chapter-14/build
       TARGET_BIN: firmware.bin
+      TEST_ART_DIR: Chapter-14/test-artifacts
 
     steps:
       - name: Checkout code
@@ -44,17 +45,35 @@ jobs:
           ls -lh "${BUILD_DIR}" || true
           test -f "${BUILD_DIR}/${TARGET_BIN}" && sha256sum "${BUILD_DIR}/${TARGET_BIN}" || echo "Note: ${BUILD_DIR}/${TARGET_BIN} not found (ok if your Makefile uses a different name)."
 
-      - name: Run unit tests (if script present)
+      - name: Run unit tests (capture logs + artifacts)
+        id: runtests
         run: |
+          mkdir -p "${TEST_ART_DIR}"
           if [ -f "${CHAPTER_DIR}/run_tests.sh" ]; then
             chmod +x "${CHAPTER_DIR}/run_tests.sh"
             echo "[CI] Running unit tests..."
-            (cd "${CHAPTER_DIR}" && ./run_tests.sh)
+            # capture stdout/stderr to a log for artifacts
+            (cd "${CHAPTER_DIR}" && ./run_tests.sh) \
+              > "${TEST_ART_DIR}/tests.log" 2>&1 || echo "Unit tests returned non-zero exit code."
+            # If your tests generate these, they'll be uploaded too:
+            # - JUnit XML: Chapter-14/test-artifacts/junit/*.xml
+            # - Coverage:  Chapter-14/test-artifacts/coverage/**
           else
-            echo "[CI] No run_tests.sh found in ${CHAPTER_DIR} — skipping tests."
+            echo "[CI] No run_tests.sh found — creating placeholder log."
+            echo "No tests present in ${CHAPTER_DIR}" > "${TEST_ART_DIR}/tests.log"
           fi
 
+      - name: Upload unit-test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chapter-14-tests-${{ github.run_number }}
+          path: |
+            Chapter-14/test-artifacts/**
+          if-no-files-found: warn
+
       - name: Upload build artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: chapter-14-build-${{ github.run_number }}
