@@ -1,0 +1,82 @@
+name: Chapter 14 — OTA Build, Sign & Upload
+
+on:
+  push:
+    paths:
+      - 'Chapter-14/**'
+      - '.github/workflows/chapter-14.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  ota:
+    runs-on: ubuntu-latest
+
+    env:
+      CHAPTER_DIR: Chapter-14
+      BUILD_DIR: Chapter-14/build
+      TARGET_BIN: firmware.bin
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install toolchain & openssl
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-arm-none-eabi binutils-arm-none-eabi libnewlib-arm-none-eabi make openssl
+
+      - name: Show tool versions (visibility)
+        run: |
+          arm-none-eabi-gcc --version
+          arm-none-eabi-objcopy --version
+          arm-none-eabi-size --version
+          openssl version
+          make --version
+
+      # Build via Chapter-14 Makefile (expects $(BUILD_DIR)/firmware.bin)
+      - name: Build firmware
+        run: make -C "${CHAPTER_DIR}" all
+
+      - name: Check firmware output exists
+        run: |
+          test -f "${BUILD_DIR}/${TARGET_BIN}" || (echo "Missing ${BUILD_DIR}/${TARGET_BIN}" && exit 1)
+          ls -lh "${BUILD_DIR}/${TARGET_BIN}"
+
+      # Dummy sign (temp private key) — for demo only
+      - name: Sign firmware (dummy key)
+        run: |
+          mkdir -p "${BUILD_DIR}"
+          # Generate temp key
+          openssl genrsa -out temp_priv.pem 2048
+          # Sign firmware
+          openssl dgst -sha256 -sign temp_priv.pem \
+            -out "${BUILD_DIR}/fw.sig" "${BUILD_DIR}/${TARGET_BIN}"
+          # Bundle signed firmware
+          cat "${BUILD_DIR}/${TARGET_BIN}" "${BUILD_DIR}/fw.sig" > "${BUILD_DIR}/fw_signed.bin"
+          # Show hashes
+          echo "SHA256 (firmware.bin):"
+          openssl dgst -sha256 "${BUILD_DIR}/${TARGET_BIN}"
+          echo "SHA256 (fw_signed.bin):"
+          openssl dgst -sha256 "${BUILD_DIR}/fw_signed.bin"
+          echo "Signed firmware at ${BUILD_DIR}/fw_signed.bin"
+
+      - name: Simulate Upload to S3
+        run: |
+          mkdir -p uploads/Chapter-14
+          cp "${BUILD_DIR}/fw_signed.bin" "uploads/Chapter-14/"
+          echo "Pretending to upload to S3… stored at uploads/Chapter-14/fw_signed.bin"
+
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Chapter-14-fw_signed-${{ github.run_number }}
+          path: |
+            Chapter-14/build/fw_signed.bin
+            Chapter-14/build/fw.sig
+            Chapter-14/build/*.elf
+            Chapter-14/build/*.hex
+            Chapter-14/build/*.bin
+            Chapter-14/build/*.map
+          if-no-files-found: warn
